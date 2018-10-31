@@ -1,0 +1,36 @@
+---
+- name : Get Device Uptime
+  hosts: ex2200
+  roles:
+    - Juniper.junos
+  connection: local
+  gather_facts: no
+
+  vars_prompt:
+    - name: username
+      propmpt: Junos username
+      private: no
+    - name: password
+      prompt: Junos password
+      private: yes
+
+ 
+  tasks:
+    - name: gathering info from device
+      junos_get_facts: host={{ inventory_hostname }} 
+      register: junos
+      
+    - name: get uptime using galaxy module
+      juniper_junos_command:
+        commands:
+          - show system uptime
+        provider:
+          host: "{{ ansible_host }}"
+          port: 22
+          user: "{{ username }}"
+          password: "{{ password }}"
+      register: uptime
+#    - debug: var=inventory_hostname
+
+ #   - debug:
+ #       var: ansible_host

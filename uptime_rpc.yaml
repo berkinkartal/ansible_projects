@@ -1,0 +1,51 @@
+---
+- name: Get Device Uptime
+  hosts: vmx1
+  roles:
+    - Juniper.junos
+  connection: local
+  gather_facts: no
+
+  vars:
+    - name: Set authorized key took from file
+      authorized_key:
+        user: fortinet
+        state: present
+        key: "{{ lookup('file', '/home/mis/.ssh/id_rsa.pub') }}"
+
+#  vars_prompt:
+#    - name: username
+#      propmpt: Junos username
+#      private: no
+#    - name: password
+#      prompt: Junos password
+#      private: yes
+
+
+  tasks:
+    - name: gathering info from device
+      juniper_junos_rpc:
+        rpcs:
+          - get-system-uptime-information
+
+#      junos_get_facts: host={{ inventory_hostname }}
+#      juniper_junos_rpc:
+#        rpcs:
+#          - get-system-uptime-information
+        provider:
+         host: "{{ ansible_host }}"
+#         user: "{{ username }}"
+#         password: "{{ password }}"
+         port: 22
+      register: uptime
+
+    - name: display uptime
+      debug: 
+        var: uptime.parsed_output['system-uptime-information']['uptime-information']
+#        var: uptime['stdout_lines'][6]
+        verbosity: 0
+      when: uptime.parsed_output['system-uptime-information'] is defined
+
+ #   - debug:
+ #       var: ansible_host
+

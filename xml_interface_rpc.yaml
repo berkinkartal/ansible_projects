@@ -1,0 +1,78 @@
+---
+- name: Get Device Interfaces
+  hosts: vmx1
+  roles:
+    - Juniper.junos
+  connection: local
+  gather_facts: no
+
+  vars:
+    - name: Set authorized key took from file
+      authorized_key:
+        user: fortinet
+        state: present
+        key: "{{ lookup('file', '/home/mis/.ssh/id_rsa.pub') }}"
+
+#  vars_prompt:
+#    - name: username
+#      propmpt: Junos username
+#      private: no
+#    - name: password
+#      prompt: Junos password
+#      private: yes
+
+
+  tasks:
+    - name: gathering info from device
+      juniper_junos_rpc:
+        rpcs:
+          - get-interface-information
+        formats: xml    # options xml,json, text
+#        dest_dir: '.'
+#        return_output: no
+#        kwargs:
+#          detail: True
+#          interface_name: ge-0/0/0
+
+#      junos_get_facts: host={{ inventory_hostname }}
+#      juniper_junos_rpc:
+#        rpcs:
+#          - get-system-uptime-information
+        provider:
+         host: "{{ ansible_host }}"
+#         user: "{{ username }}"
+#         password: "{{ password }}"
+#         port: 22        #if commented out use NETCONF default port 830
+      register: interfaces
+
+    - name: query interface name
+      xml:
+        xmlstring: "{{ interfaces.stdout  }}"
+        xpath: //physical-interface/logical-interface/name
+        content: text
+      register: if_name
+
+    - name: query interface IP
+      xml:
+        xmlstring: "{{ interfaces.stdout  }}"
+        xpath: //logical-interface/address-family[address-family-name='inet']/interface-address/ifa-local
+        content: text
+      register: ip_addr
+
+    - name: show query results1
+      debug: 
+        msg: "{{ if_name.matches | map(attribute='name') | list }}; {{ ip_addr.matches | map(attribute='ifa-local') | list }}"
+
+    - name: show query results2
+      debug: 
+        msg: "{{ ip_addr.matches }}"
+
+      # map('lower') | select('match','lo0') | list 
+#        var: if_name.matches[0]['name'], ip_addr.matches[0]['ifa-local']
+#        var: uptime['stdout_lines'][6]
+        verbosity: 0
+#      when: uptime.parsed_output['system-uptime-information'] is defined
+
+ #   - debug:
+ #       var: ansible_host
+
